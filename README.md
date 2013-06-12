@@ -21,4 +21,4 @@ Pour l'utiliser facilement :
 2. Donnez lui les droits d'être exécuté :
 	chmod +x /usr/local/bin/spip_update
 3. Rendez vous à la racine d'un site SPIP et lancez la commande :
-	spip_update
+	spip_update.sh
