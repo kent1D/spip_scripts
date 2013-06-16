@@ -72,7 +72,7 @@ for line in `svn diff -r HEAD plugins*/*/paquet.xml 2> /dev/null |grep '<lib' |g
 	
 	ZIP=$(echo $line | sed 's/.*lien=\"\([^"]*\)\".*/\1/g')
 	DIR=$(echo $line | sed 's/.*nom=\"\([^"]*\)\".*/\1/g')
-	FILE=$(echo $ZIP | sed 's/.*\///g')
+	file=$(echo $ZIP | sed 's/.*\///g')
 	
 	if [ ! -d lib ];then
 		echo "Création du répertoire lib inexistant"
@@ -89,23 +89,29 @@ for line in `svn diff -r HEAD plugins*/*/paquet.xml 2> /dev/null |grep '<lib' |g
 		else
 			echo "Le fichier existait déjà"
 		fi
-		MIME=$(file --mime-type $FILE |awk '{print $2}')
+
+		MIME=`file --mime-type "$file" |awk 'BEGIN { FS = ":" } ; {print $2}' {print $2}' | tr -d ' '`
 		if [ $MIME == 'application/zip' ]; then
-			echo "Extraction de $FILE ($MIME)"
-			unzip $FILE 2>> $LOG >> $LOG
+			echo "Extraction de $file ($MIME)"
+			first=`zipinfo -1 "$file" | head -1`
+			if [ "$first" = "$DIR"/ ];then
+				unzip "$file" 2>> $LOG >> $LOG		
+			elif [ "${first:-1}" = "/" ];then 
+				unzip "$file" 2>> $LOG >> $LOG
+				mv "$first" "$DIR"
+			else
+				unzip "$file" -d "$DIR" 2>> $LOG >> $LOG
+			fi
+			rm "$file"
 		else
-			echo "Le fichier n'a pu être extrait"
+			echo "Le fichier $FILE n'a pu être extrait"
+		fi
+
+		if [ ! -d $DIR ]; then
+			echo "Erreur dans la création du répertoire $DIR"
 			exit 1
 		fi
-		
-		if [ ! -d $DIR ]; then
-			echo "Erreur dans la création du répertoire"
-			exit 1	
-		fi
 		cd ..
-		
-	else
-		echo "Le répertoire $DIR déjà existant"
 	fi
 	chown -Rvf $USER:$GROUP lib/ 2>> $LOG >> $LOG
 	echo
@@ -138,5 +144,5 @@ if [ -d mutualisation ]; then
 	chown -Rvf $USER:$GROUP mutualisation/ 2>> $LOG >> $LOG
 	echo
 fi
-	
+
 exit 0
