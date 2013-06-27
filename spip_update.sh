@@ -36,66 +36,6 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
-echo "SPIP Update $VERSION"
-
-# Pas de répertoire .svn à la racine ou pas de spip.php
-# => Pas SPIP versionnalisé, on sort
-if [ ! -d .svn ] || [ ! -e ./spip.php ]; then
-	echo
-	echo "Vous n êtes pas dans un répertoire SPIP sous svn"
-	echo
-	exit 1
-fi
-
-# USER vide, on utilise celui de spip.php
-if [ "$USER" = "" ]; then
-	USER=$(ls -l spip.php | awk '{ print $3 }')
-fi
-# GROUP vide, on utilise celui de spip.php
-if [ "$GROUP" = "" ]; then
-	GROUP=$(ls -l spip.php | awk '{ print $4 }')
-fi
-
-echo
-echo "Vérification des librairies"
-echo
-
-IFS="
-"
-
-# Mise à jour de SPIP et on met les droits corrects
-echo "Mise à jour de SPIP"
-svn up 2>> $LOG >> $LOG
-chown -Rvf $USER:$GROUP prive/ squelettes-dist/ ecrire/ local/ 2>> $LOG >> $LOG
-echo
-
-# Mise à jour des plugins et on met les droits corrects
-echo "Mise à jour des répertoires de plugins"
-svn up plugins*/* 2>> $LOG >> $LOG
-chown -Rvf $USER:$GROUP plugins*/ 2>> $LOG >> $LOG
-echo
-
-# On check chaque librairie
-for line in ` grep -hr "<lib " plugins*/*/p*.xml 2> /dev/null`;do
-	verifier_librairie	$line
-done
-
-# Si un répertoire themes existe : mise à jour des themes et on met les droits corrects
-if [ -d themes ]; then
-	echo "Mise à jour des thèmes"
-	svn up themes/* 2>> $LOG >> $LOG
-	chown -Rvf $USER:$GROUP themes/ 2>> $LOG >> $LOG
-	echo
-fi
-
-# Si un répertoire mutualisation existe : mise à jour de mutualisation et on met les droits corrects
-if [ -d mutualisation ]; then
-	echo "Mise à jour du répertoire de mutualisation"
-	svn up mutualisation/ 2>> $LOG >> $LOG
-	chown -Rvf $USER:$GROUP mutualisation/ 2>> $LOG >> $LOG
-	echo
-fi
-
 # Fonction d'installation des librairies
 verifier_librairie()
 {
@@ -144,4 +84,62 @@ verifier_librairie()
 		cd ..
 	fi
 }
+
+echo "SPIP Update $VERSION"
+
+# Pas de répertoire .svn à la racine ou pas de spip.php
+# => Pas SPIP versionnalisé, on sort
+if [ ! -d .svn ] || [ ! -e ./spip.php ]; then
+	echo
+	echo "Vous n êtes pas dans un répertoire SPIP sous svn"
+	echo
+	exit 1
+fi
+
+# USER vide, on utilise celui de spip.php
+if [ "$USER" = "" ]; then
+	USER=$(ls -l spip.php | awk '{ print $3 }')
+fi
+# GROUP vide, on utilise celui de spip.php
+if [ "$GROUP" = "" ]; then
+	GROUP=$(ls -l spip.php | awk '{ print $4 }')
+fi
+
+# Mise à jour de SPIP et on met les droits corrects
+echo "Mise à jour de SPIP"
+svn up 2>> $LOG >> $LOG
+chown -Rvf $USER:$GROUP prive/ squelettes-dist/ ecrire/ local/ 2>> $LOG >> $LOG
+echo
+
+# Mise à jour des plugins et on met les droits corrects
+echo "Mise à jour des répertoires de plugins"
+svn up plugins*/* 2>> $LOG >> $LOG
+chown -Rvf $USER:$GROUP plugins*/ 2>> $LOG >> $LOG
+echo
+
+echo
+echo "Vérification des librairies"
+echo
+
+# On check chaque librairie
+for line in ` grep -hr "<lib " plugins*/*/p*.xml 2> /dev/null`;do
+	verifier_librairie	$line
+done
+
+# Si un répertoire themes existe : mise à jour des themes et on met les droits corrects
+if [ -d themes ]; then
+	echo "Mise à jour des thèmes"
+	svn up themes/* 2>> $LOG >> $LOG
+	chown -Rvf $USER:$GROUP themes/ 2>> $LOG >> $LOG
+	echo
+fi
+
+# Si un répertoire mutualisation existe : mise à jour de mutualisation et on met les droits corrects
+if [ -d mutualisation ]; then
+	echo "Mise à jour du répertoire de mutualisation"
+	svn up mutualisation/ 2>> $LOG >> $LOG
+	chown -Rvf $USER:$GROUP mutualisation/ 2>> $LOG >> $LOG
+	echo
+fi
+
 exit 0
