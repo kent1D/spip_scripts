@@ -122,9 +122,12 @@ echo "Vérification des librairies"
 echo
 
 # On check chaque librairie
+IFS="
+"
 for line in ` grep -hr "<lib " plugins*/*/p*.xml 2> /dev/null`;do
-	verifier_librairie	$line
+	verifier_librairie $line
 done
+chown -Rvf $USER:$GROUP lib/ 2>> $LOG >> $LOG
 
 # Si un répertoire themes existe : mise à jour des themes et on met les droits corrects
 if [ -d themes ]; then
