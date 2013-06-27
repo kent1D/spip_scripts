@@ -106,6 +106,7 @@ if [ "$GROUP" = "" ]; then
 fi
 
 # Mise à jour de SPIP et on met les droits corrects
+echo
 echo "Mise à jour de SPIP"
 svn up 2>> $LOG >> $LOG
 chown -Rvf $USER:$GROUP prive/ squelettes-dist/ ecrire/ local/ 2>> $LOG >> $LOG
@@ -117,7 +118,6 @@ svn up plugins*/* 2>> $LOG >> $LOG
 chown -Rvf $USER:$GROUP plugins*/ 2>> $LOG >> $LOG
 echo
 
-echo
 echo "Vérification des librairies"
 echo
 
