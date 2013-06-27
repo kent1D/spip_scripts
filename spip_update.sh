@@ -75,11 +75,11 @@ verifier_librairie()
 			fi
 			rm "$FILE" 2>> $LOG >> $LOG
 		else
-			echo $(eval_gettext "Info SPIP lib erreur fichier $FILE")
+			echo "Erreur de récupération du fichier $FILE"
 		fi
 
 		if [ ! -d "$DIR" ]; then
-			echo $(eval_gettext "Info SPIP lib erreur dezip $DIR")
+			echo "Erreur de création du répertoire $DIR"
 		fi
 		cd ..
 	fi
