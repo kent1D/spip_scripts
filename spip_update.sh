@@ -2,14 +2,14 @@
 # spip_update
 #
 # © 2013 - kent1 (kent1@arscenic.info)
-# Version 0.1.0
+# Version 0.2.0
 #
 
 CURRENT=$(pwd)
 
 # Les options de base
 LOG=/dev/null
-VERSION="0.1.0"
+VERSION="0.2.0"
 USER=""
 GROUP=""
 VIDER_CACHE=false
@@ -63,60 +63,6 @@ echo
 IFS="
 "
 
-# On test chaque paquet.xml des répertoires plugins*
-# Si un contient un changement de lib :
-# On télécharge la lib
-# On dézip la lib
-# On vérifie bien tout
-for line in `svn diff -r HEAD plugins*/*/paquet.xml 2> /dev/null |grep '<lib' |grep '^-'`;do
-	
-	ZIP=$(echo $line | sed 's/.*lien=\"\([^"]*\)\".*/\1/g')
-	DIR=$(echo $line | sed 's/.*nom=\"\([^"]*\)\".*/\1/g')
-	file=$(echo $ZIP | sed 's/.*\///g')
-	
-	if [ ! -d lib ];then
-		echo "Création du répertoire lib inexistant"
-		mkdir lib && chmod 755 lib/
-		echo
-	fi
-	
-	if [ ! -d lib/$DIR ];then
-		echo "Récupération de $FILE ($ZIP) dans le répertoire $DIR"
-		cd lib/
-		
-		if [ ! -e $FILE ];then
-			wget $ZIP 2>> $LOG >> $LOG
-		else
-			echo "Le fichier existait déjà"
-		fi
-
-		MIME=`file --mime-type "$file" |awk 'BEGIN { FS = ":" } ; {print $2}' {print $2}' | tr -d ' '`
-		if [ $MIME == 'application/zip' ]; then
-			echo "Extraction de $file ($MIME)"
-			first=`zipinfo -1 "$file" | head -1`
-			if [ "$first" = "$DIR"/ ];then
-				unzip "$file" 2>> $LOG >> $LOG		
-			elif [ "${first:-1}" = "/" ];then 
-				unzip "$file" 2>> $LOG >> $LOG
-				mv "$first" "$DIR"
-			else
-				unzip "$file" -d "$DIR" 2>> $LOG >> $LOG
-			fi
-			rm "$file"
-		else
-			echo "Le fichier $FILE n'a pu être extrait"
-		fi
-
-		if [ ! -d $DIR ]; then
-			echo "Erreur dans la création du répertoire $DIR"
-			exit 1
-		fi
-		cd ..
-	fi
-	chown -Rvf $USER:$GROUP lib/ 2>> $LOG >> $LOG
-	echo
-done
-
 # Mise à jour de SPIP et on met les droits corrects
 echo "Mise à jour de SPIP"
 svn up 2>> $LOG >> $LOG
@@ -128,6 +74,11 @@ echo "Mise à jour des répertoires de plugins"
 svn up plugins*/* 2>> $LOG >> $LOG
 chown -Rvf $USER:$GROUP plugins*/ 2>> $LOG >> $LOG
 echo
+
+# On check chaque librairie
+for line in ` grep -hr "<lib " plugins*/*/p*.xml 2> /dev/null`;do
+	verifier_librairie	$line
+done
 
 # Si un répertoire themes existe : mise à jour des themes et on met les droits corrects
 if [ -d themes ]; then
@@ -145,4 +96,52 @@ if [ -d mutualisation ]; then
 	echo
 fi
 
+# Fonction d'installation des librairies
+verifier_librairie()
+{
+	ZIP=$(echo $1 | sed 's/.*lien=\"\([^"]*\)\".*/\1/g')
+	DIR=$(echo $1 | sed 's/.*nom=\"\([^"]*\)\".*/\1/g')
+	FILE=$(echo $ZIP | sed 's/.*\///g' | sed 's/%20/ /g')
+
+	# Si le répertoire de la lib n'existe pas
+	# On va dans lib
+	if [ ! -d "lib/$DIR" ];then
+		cd lib/ 2>> $LOG >> $LOG
+
+		# Si le zip n'est pas là on le récupère
+		if [ ! -e "$FILE" ];then
+			wget "$ZIP" 2>> $LOG >> $LOG
+		fi
+
+		# On check quel est le mime-type du fichier
+		MIME=`file --mime-type "$FILE" |awk 'BEGIN { FS = ":" } ; {print $2}' | tr -d ' '`
+		# Si c'est un zip, on sait le dézipper
+		if [ $MIME = 'application/zip' ]; then
+			FIRST=`zipinfo -1 "$FILE" | head -1`
+			# Si le premier fichier listé dans le zip est le répetoire espéré
+			# On dézip simplement le fichier zip récupéré
+			if [ "$FIRST" = "$DIR"/ ];then
+				unzip "$FILE" 2>> $LOG >> $LOG
+			# Si le premier fichier listé dans le zip est un répertoire mais pas celui espéré
+			# On dézip le fichier zip récupéré
+			# On renomme le répertoire
+			elif [ "${FIRST:-1}" = "/" ];then 
+				unzip "$FILE" 2>> $LOG >> $LOG
+				mv "$FIRST" "$DIR" 2>> $LOG >> $LOG
+			# Sinon c'est que ce ne sont que des fichiers à la racine du zip
+			# On dézip donc le fichier dans le répertoire espéré
+			else
+				unzip "$FILE" -d "$DIR" 2>> $LOG >> $LOG
+			fi
+			rm "$FILE" 2>> $LOG >> $LOG
+		else
+			echo $(eval_gettext "Info SPIP lib erreur fichier $FILE")
+		fi
+
+		if [ ! -d "$DIR" ]; then
+			echo $(eval_gettext "Info SPIP lib erreur dezip $DIR")
+		fi
+		cd ..
+	fi
+}
 exit 0
